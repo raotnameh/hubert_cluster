@@ -1,0 +1,4 @@
+- task.data=/home/hemant/hemant/librispeech/data/manifest
+- task.normalize=false
+- dataset.gen_subset=test-other
+- common_eval.path=/home/hemant/l/hemant/ASR/hubert-cluster/examples/hubert/checkpoints/checkpoint_best.pt

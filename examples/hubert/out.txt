@@ -1,0 +1,98 @@
+    1  cd fa
+    2  cd part3/fairseq/
+    3  pip install --editable ./
+    4  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+    5  cd examples/hubert/
+    6  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+    7  vi /workspace/part3/pre/lab/feat//dict.km.txt
+    8  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+    9  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=1000
+   10  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   11  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=1000
+   12  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   13  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=1000
+   14  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   15  python
+   16  vi config/pretrain/hubert_base_librispeech.yaml 
+   17  history |grep learn_k
+   18  cd simple_kmeans/
+   19  python learn_kmeans.py /workspace/part3/pre/feat train 1 /workspace/part3/pre/feat_km_1000 1000 --percent -1
+   20  python learn_kmeans.py /workspace/part3/pre/feat train 1 /workspace/part3/pre/feat_km_1000 1000 --percent 0.1
+   21  cd ..
+   22  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   23  cd ..
+   24  cd hubert/
+   25  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   26  cd hubert/
+   27  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   28  cd hubert/
+   29  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   30  cd hubert/
+   31  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100
+   32  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100 checkpoint.save_dir=/workspace/part3/fairseq/examples/hubert/checkpoints
+   33  source /opt/anaconda/bin/activate
+   34  conda activate litmus
+   35  ls
+   36  cd checkpoints/
+   37  ls
+   38  cd ..
+   39  ls
+   40  cd outputs/
+   41  ls
+   42  ls -lhs
+   43  cd 2022-05-07/
+   44  ls
+   45  ls -lhs
+   46  cd 11-33-44/
+   47  ls
+   48  vi hydra_train.log 
+   49  cd ../..
+   50  cd ..
+   51  cd checkpoints/
+   52  ls
+   53  cd ..
+   54  cd checkpoints/
+   55  ls
+   56  mkdir reproduce_1st_itertion_mine_true_l_r_1
+   57  mv *.pt reproduce_1st_itertion_mine_true_l_r_1/
+   58  ls
+   59  cd ..
+   60  fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100 model.l_r=2 && fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100 model.l_r=3 && fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100 model.l_r=4 && fairseq-hydra-train --config-dir config/pretrain/ --config-name hubert_base_librispeech  task.data=/workspace/part3/data/hindi/manifest/ task.label_dir=/workspace/part3/pre/lab/feat/ task.labels='["km"]' model.label_rate=100 model.l_r=5
+   61  d'
+   62  cd simple_kmeans/
+   63  ls
+   64  ls /workspace/
+   65  cd /workspace/part4
+   66  ls
+   67  cd librispeech/
+   68  ls
+   69  mkdir data
+   70  mv test-* train* dev-* data/
+   71  ls
+   72  rm -rf manifest/
+   73  ls
+   74  cd speech-helper-functions/
+   75  ls
+   76  cd shf/
+   77  python wav2vec_manifest_finetune.py /workspace/part4/librispeech/data/
+   78  cd /workspace/part3/fairseq/examples/hubert/simple_kmeans/
+   79  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ train 1 1 /workspace/part4/librispeech/mfcc_feat_data/
+   80  pip install npy_append_array
+   81  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ train 1 1 /workspace/part4/librispeech/mfcc_feat_data/
+   82  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ train 1 0 /workspace/part4/librispeech/mfcc_feat_data/
+   83  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ dev 1 0 /workspace/part4/librispeech/mfcc_feat_data/
+   84  python wav2vec_manifest_finetune.py /workspace/part4/librispeech/data/
+   85  cd /workspace/part4/librispeech/speech-helper-functions/shf/
+   86  python wav2vec_manifest_finetune.py /workspace/part4/librispeech/data/
+   87  cd /workspace/part3/fairseq/examples/hubert/simple_kmeans/
+   88  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ dev 1 0 /workspace/part4/librispeech/mfcc_feat_data/
+   89  cd /workspace/part4/librispeech/speech-helper-functions/shf/
+   90  python wav2vec_manifest_finetune.py /workspace/part4/librispeech/data/
+   91  cd /workspace/part3/fairseq/examples/hubert/simple_kmeans/
+   92  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ dev 1 0 /workspace/part4/librispeech/mfcc_feat_data/
+   93  python dump_mfcc_feature.py /workspace/part4/librispeech/data/manifest/ test 1 0 /workspace/part4/librispeech/mfcc_feat_data/
+   94  python learn_kmeans.py /workspace/part4/librispeech/mfcc_feat_data/ train 1 /workspace/part4/librispeech/mfcc_km_path_data/ 100 --percent -1
+   95  python learn_kmeans.py /workspace/part4/librispeech/mfcc_feat_data/ train 1 /workspace/part4/librispeech/mfcc_km_path_data/train 100 --percent 0.1
+   96  python learn_kmeans.py /workspace/part4/librispeech/mfcc_feat_data/ train 1 /workspace/part4/librispeech/mfcc_km_path_data/train 100 --percent -1
+   97  cd ..
+   98  history > out.txt
