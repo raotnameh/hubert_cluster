@@ -221,16 +221,8 @@ class HubertDataset(FairseqDataset):
         if len(samples) == 0:
             return {}
 
-        # audios = [s["source"] for s in samples]
-        audios = []
-        for s in samples:
-            dummy = s["source"]
-            audios.append(dummy[:int(len(dummy)/2)])
-            audios.append(dummy[int(len(dummy)/2):])
-
+        audios = [s["source"] for s in samples]
         audio_sizes = [len(s) for s in audios]
-        # print(len(audios))
-        # print(audio_sizes)
         if self.pad_audio:
             audio_size = min(max(audio_sizes), self.max_sample_size)
         else:
@@ -238,28 +230,13 @@ class HubertDataset(FairseqDataset):
         collated_audios, padding_mask, audio_starts = self.collater_audio(
             audios, audio_size
         )
-        # print(collated_audios.shape)
 
-        # targets_by_label = [
-        #     [s["label_list"][i] for s in samples] for i in range(self.num_labels)
-        # ] # [[len(data)]*3]
-        targets_by_label = []
-        for i in range(self.num_labels):
-            dummy = []
-            for s in samples:
-                d = s["label_list"][i]
-                dummy.append(d[:int(len(d)/2)])
-                dummy.append(d[int(len(d)/2):])
-            targets_by_label.append(dummy)
-
-        # print(len(targets_by_label))
-        # print(len(targets_by_label[0]), len(targets_by_label[1]), len(targets_by_label[2]))
-        # print(len(targets_by_label[0]))
-        # exit()
+        targets_by_label = [
+            [s["label_list"][i] for s in samples] for i in range(self.num_labels)
+        ]
         targets_list, lengths_list, ntokens_list = self.collater_label(
             targets_by_label, audio_size, audio_starts
         )
-
 
         net_input = {"source": collated_audios, "padding_mask": padding_mask}
         batch = {
@@ -296,7 +273,7 @@ class HubertDataset(FairseqDataset):
                 collated_audios[i], audio_starts[i] = self.crop_to_max_size(
                     audio, audio_size
                 )
-
+        print(collated_audios.shape)
         return collated_audios, padding_mask, audio_starts
 
     def collater_frm_label(self, targets, audio_size, audio_starts, label_rate, pad):

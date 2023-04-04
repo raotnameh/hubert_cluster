@@ -11,9 +11,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 from omegaconf import II
-import time
- 
-from fairseq.modules import Fp32LayerNorm
 
 from fairseq import utils
 from fairseq.data.data_utils import compute_mask_indices
@@ -257,11 +254,7 @@ class HubertConfig(FairseqDataclass):
         default="abs",
         metadata={"help": "Positional encoding type to use in conformer"},
     )
-    fp16: bool = field(
-        default=False, metadata={"help": "If fp16 is being used"})
-
-    test_pad: bool = field(
-        default=False, metadata={"help": "If we are using contrastive loss"})
+    fp16: bool = field(default=False, metadata={"help": "If fp16 is being used"})
 
 
 @register_model("hubert", dataclass=HubertConfig)
@@ -275,13 +268,9 @@ class HubertModel(BaseFairseqModel):
         super().__init__()
         logger.info(f"HubertModel Config: {cfg}")
         
-
-        self.test_pad = cfg.test_pad
-
         feature_enc_layers = eval(cfg.conv_feature_layers)  # noqa # [(512, 10, 5), (512, 3, 2), (512, 3, 2), (512, 3, 2), (512, 3, 2), (512, 2, 2), (512, 2, 2)]
         self.embed = feature_enc_layers[-1][0] #512
 
-        # self.contrast_layer = nn.Embedding(1, cfg.encoder_embed_dim)  # 1 words in vocab, 512 dimensional embeddings
         self.feature_extractor = ConvFeatureExtractionModel(
             conv_layers=feature_enc_layers,
             dropout=0.0,
@@ -368,15 +357,6 @@ class HubertModel(BaseFairseqModel):
                 torch.FloatTensor(sum(self.num_classes), final_dim)
             )
             nn.init.uniform_(self.label_embs_concat)
-            
-            self.contrast = nn.Sequential(      
-                                # nn.GELU(),
-                                nn.Dropout(p=0.5),
-                                nn.Linear(int(2*cfg.encoder_embed_dim), 1),
-                                # nn.GELU(),
-                                # nn.Dropout(p=0.1),
-                                # nn.Linear(100, 1),
-                                )
       
     def upgrade_state_dict_named(self, state_dict, name):
         """Upgrade a (possibly old) state dict for new versions of fairseq."""
@@ -475,8 +455,7 @@ class HubertModel(BaseFairseqModel):
         features: torch.Tensor,
         padding_mask: torch.Tensor,
     ) -> torch.Tensor:
-   
-        extra = padding_mask.size(1) % (features.size(1))
+        extra = padding_mask.size(1) % features.size(1)
         if extra > 0:
             padding_mask = padding_mask[:, :-extra]
         padding_mask = padding_mask.view(padding_mask.size(0), features.size(1), -1)
@@ -493,23 +472,21 @@ class HubertModel(BaseFairseqModel):
         output_layer: Optional[int] = None,
     ) -> Dict[str, torch.Tensor]:
         """output layer is 1-based"""
-
       
         features = self.forward_features(source) # conv features out
         # print(target_list[0].shape) #torch.Size([24, 342]) batchsize, label rate or label for some combined frame could not be equal to the output of feature encoder above.
-
         if target_list is not None:
             features, target_list = self.forward_targets(features, target_list)
-
+        
         features_pen = features.float().pow(2).mean()
 
         features = features.transpose(1, 2)
         features = self.layer_norm(features)
         unmasked_features = features.clone()
-        
+
         if padding_mask is not None:
             padding_mask = self.forward_padding_mask(features, padding_mask)
-
+ 
         if self.post_extract_proj is not None:
             features = self.post_extract_proj(features)
 
@@ -521,54 +498,22 @@ class HubertModel(BaseFairseqModel):
         else:
             x = features
             mask_indices = None
-        
-        # rank_ = x.new([0]).to(torch.int)
-        # embed = self.contrast_layer(rank_).view(-1,1,x.shape[-1])
 
-        # x = torch.cat((x,embed.expand(x.shape[0],-1,-1)), axis=1)
-        # print(x[:,:,-1].mean())
-        change = [padding_mask.shape]
-        if self.test_pad: 
-            a = padding_mask.new([False]).view(1,-1)
-            padding_mask = torch.cat((a.expand(padding_mask.shape[0],-1),padding_mask),axis=1)
-            change.append(padding_mask.shape)
-        
+        # feature: (B, T, D), float
+        # target: (B, T), long
+        # x: (B, T, D), float
+        # padding_mask: (B, T), bool
+        # mask_indices: (B, T), bool
         x, x_layer_results = self.encoder(
             x,
             padding_mask=padding_mask,
             layer=None if output_layer is None else output_layer - 1,
-            test_pad=self.test_pad,
         )
-        
+        # print(x.shape, x_layer_results[0][0].shape)
+        # print((x == x_layer_results[-1][0]).all())
         if features_only:
             return {"x": x, "padding_mask": padding_mask, "features": features}
-            # return {"x": x, "padding_mask": padding_mask, "features": features, "change": change}
-
-        if self.test_pad: 
-            contrastive_features =x[:,0,:]
-            # print(contrastive_features.mean())
-    
-            shape_ = contrastive_features.shape[0]
-            
-            contrastive_loss_features = [] 
-            
-            for k1, i_ in enumerate(contrastive_features):
-                dummy = []
-                for k2, j_ in enumerate(contrastive_features):
-                    new = torch.cat((i_,j_))
-                
-                    dummy.append(self.contrast(new))
-                contrastive_loss_features.append(dummy) 
-
-            x = x[:,:-1,:] # batch,feature,seq_len
-            
-            # print(x_layer_results[0][0].shape, x.shape)
-            # exit()
-            x_layer_results = [[i[0][1:,:,:]] for i in 
-            x_layer_results]
         
-            padding_mask = padding_mask[:,1:]
-
         def compute_pred(proj_x, target, label_embs):
             # compute logits for the i-th label set
             y = torch.index_select(label_embs, 0, target.long()) # [1968, 256]
@@ -647,7 +592,6 @@ class HubertModel(BaseFairseqModel):
                 logit_u_list = [None for _ in target_list]
 
             result = {
-                "contrastive_loss_features": contrastive_loss_features if self.test_pad else None,
                 "logit_m_list": logit_m_list, # torch.Size([1968, 106])
                 "logit_u_list": logit_u_list, # torch.Size([1968, 106])
                 "padding_mask": padding_mask,
@@ -690,7 +634,6 @@ class HubertModel(BaseFairseqModel):
             logit_u_list = [None for _ in target_list]
 
         result = {
-                
                 "logit_m_list": logit_m_list, # torch.Size([1968, 106])
                 "logit_u_list": logit_u_list, # torch.Size([1968, 106])
                 "padding_mask": padding_mask,
@@ -706,12 +649,8 @@ class HubertModel(BaseFairseqModel):
         padding_mask: Optional[torch.Tensor] = None,
         mask: bool = False,
         ret_conv: bool = False,
-        test_pad: bool = False,
         output_layer: Optional[int] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-  
-        self.test_pad = test_pad
-    
         res = self.forward(
             source,
             padding_mask=padding_mask,
@@ -720,7 +659,7 @@ class HubertModel(BaseFairseqModel):
             output_layer=output_layer,
         )
         feature = res["features"] if ret_conv else res["x"]
-        return feature, res["padding_mask"] #, res['change']
+        return feature, res["padding_mask"]
 
     def get_logits(self, net_output, is_masked=True):
         if is_masked:

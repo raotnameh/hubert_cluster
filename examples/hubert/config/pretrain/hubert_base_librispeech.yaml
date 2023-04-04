@@ -15,9 +15,9 @@ checkpoint:
 distributed_training:
   ddp_backend: no_c10d
   distributed_backend: 'nccl'
-  distributed_world_size: 4
+  distributed_world_size: 5
   # distributed_port: 29671
-  nprocs_per_node: 4
+  nprocs_per_node: 5
   find_unused_parameters: true
 
 task:
@@ -35,8 +35,6 @@ task:
 
 dataset:
   num_workers: 6
-  required_batch_size_multiple: 2
-  #train_subset: dev
   valid_subset: dev
   max_tokens: 1400000
   skip_invalid_size_inputs_valid_test: true
@@ -68,7 +66,6 @@ lr_scheduler:
 model:
   _name: hubert
   mine: true
-  test_pad: false
   l_r: ${task.labels}
   label_rate: ???
   skip_masked: false

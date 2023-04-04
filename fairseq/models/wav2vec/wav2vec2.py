@@ -995,15 +995,11 @@ class TransformerEncoder(nn.Module):
         self.layer_norm_first = args.layer_norm_first
         self.layer_norm = LayerNorm(self.embedding_dim)
         self.layerdrop = args.encoder_layerdrop
-        
-        # adding the embedding layer. 
-        # self.contrast_layer = nn.Embedding(1, args.encoder_embed_dim)  # 1 word in vocab, 768 dimensional embeddings
 
-        
         self.apply(init_bert_params)
 
-    def forward(self, x, padding_mask=None, layer=None,test_pad=False):
-        x, layer_results = self.extract_features(x, padding_mask, layer,test_pad=test_pad)
+    def forward(self, x, padding_mask=None, layer=None):
+        x, layer_results = self.extract_features(x, padding_mask, layer)
 
         if self.layer_norm_first and layer is None:
             x = self.layer_norm(x)
@@ -1016,18 +1012,7 @@ class TransformerEncoder(nn.Module):
         padding_mask=None,
         tgt_layer=None,
         min_layer=0,
-        test_pad = False
     ):
-        
-        if test_pad:
-            # add the start padding to input
-            with torch.no_grad():   
-                embed = x.new([-1]*768).view(-1,1,x.shape[-1])
-            # print(embed.mean())
-            # embed = self.contrast_layer(rank_).view(-1,1,x.shape[-1])
-            x = torch.cat((embed.expand(x.shape[0],-1,-1),x), axis=1)
-            # add the start padding to input
-
 
         if padding_mask is not None:
             x = index_put(x, padding_mask, 0)

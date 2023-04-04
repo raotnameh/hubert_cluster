@@ -7,7 +7,6 @@ import math
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional
-import numpy as np
 
 import torch
 import torch.nn.functional as F
@@ -34,7 +33,6 @@ class HubertCriterionConfig(FairseqDataclass):
         default_factory=lambda: [],
         metadata={"help": "output keys to log"},
     )
-
 
 
 @register_criterion("hubert", dataclass=HubertCriterionConfig)
@@ -65,32 +63,10 @@ class HubertCriterion(FairseqCriterion):
         sample_size = 0
         logging_output = {}
         reduction = "sum" if reduce else "none"
-
+      
         loss_m_list = []
         logp_m_list = model.get_logits(net_output, True)
         targ_m_list = model.get_targets(net_output, True)
-
-
-        contrast_loss = 0.0
-        batch = 0
-        if net_output['contrastive_loss_features']: 
-            contrast_pred = net_output['contrastive_loss_features'] # (batch,batch)
-            
-            count = 1
-            contrast_true = contrast_pred[0][0].new(np.eye(len(contrast_pred[0])))
-            for i in range(0,contrast_true.shape[0],2):
-                contrast_true[i][i+1] = 1
-                contrast_true[i+1][i] = 1
-            
-            for i_ in range(len(contrast_pred[0])):
-            
-                for j_ in range(len(contrast_pred[0])):
-                    if i_ != j_: 
-                        contrast_loss += F.binary_cross_entropy_with_logits(contrast_pred[i_][j_][0],contrast_true[i_][j_]) 
-                        count += 1
-            batch = contrast_true.shape[0]
-            
-            contrast_loss /= count
         
         assert self.pred_masked_weight == 0 or len(logp_m_list) > 0
         for i, (logp_m, targ_m) in enumerate(zip(logp_m_list, targ_m_list)):
@@ -107,13 +83,12 @@ class HubertCriterion(FairseqCriterion):
         assert self.pred_nomask_weight == 0 or len(logp_u_list) > 0
         for i, (logp_u, targ_u) in enumerate(zip(logp_u_list, targ_u_list)):
             loss_u = F.cross_entropy(logp_u, targ_u, reduction=reduction)
-     
             loss_u_list.append(loss_u)
             logging_output[f"loss_u_{i}"] = loss_u.detach().item()
         if self.pred_nomask_weight > 0:
             loss += self.pred_nomask_weight * sum(loss_u_list)
             sample_size += targ_u_list[0].numel()
-        
+
         if self.loss_weights is not None:
             assert hasattr(model, "get_extra_losses")
             extra_losses, names = model.get_extra_losses(net_output)
@@ -131,21 +106,8 @@ class HubertCriterion(FairseqCriterion):
                     loss += p
                     logging_output[f"loss_{n}"] = p.item()
 
-        
-        if net_output['contrastive_loss_features']: 
-            
-            scale = loss.item() / (2*sample_size)
-            scale /= contrast_loss.item()
-            contrast_loss *= scale
-
-            loss += contrast_loss*sample_size
-            # loss /= 2
-
-
         logging_output = {
             "loss": loss.item() if reduce else loss,
-            "contrast_loss" : contrast_loss.item() if batch !=0 else contrast_loss,
-            "batch": 1,
             "ntokens": sample_size,
             "nsentences": sample["id"].numel(),
             "sample_size": sample_size,
@@ -185,20 +147,12 @@ class HubertCriterion(FairseqCriterion):
     def reduce_metrics(logging_outputs) -> None:
         """Aggregate logging outputs from data parallel training (copied from normal cross entropy)."""
         loss_sum = sum(log.get("loss", 0) for log in logging_outputs)
-        contrast_loss_sum = sum(log.get("contrast_loss", 0) for log in logging_outputs)
         ntokens = sum(log.get("ntokens", 0) for log in logging_outputs)
         sample_size = sum(log.get("sample_size", 0) for log in logging_outputs)
-        batch_size = sum(log.get("batch", 0) for log in logging_outputs)
-
 
         metrics.log_scalar(
             "loss", loss_sum / sample_size / math.log(2), sample_size, round=3
         )
-        if batch_size != 0: 
-            metrics.log_scalar(
-            "contrast_loss", contrast_loss_sum / batch_size / math.log(2), sample_size, round=3
-        )
-        
         if sample_size != ntokens:
             metrics.log_scalar(
                 "nll_loss", loss_sum / ntokens / math.log(2), ntokens, round=3
