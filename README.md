@@ -1,4 +1,4 @@
-## We change the HUbert model in fairseq/models directory to get predictions at multiple layers. Everything else is remained same. 
+## We change the HuBERT model in fairseq/models directory to get predictions at multiple layers. Everything else is remained same. 
 
 <p align="center">
   <img src="docs/fairseq_logo.png" width="150">
