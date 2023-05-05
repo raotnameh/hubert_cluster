@@ -1,4 +1,4 @@
-## We change the HuBERT model in fairseq/models directory to get predictions at multiple layers [hubert.py](https://github.com/raotnameh/hubert_cluster/blob/af9a8d33ee57d7e9744ca74c8b7179b82229bc69/fairseq/models/hubert/hubert.py#L537). Everything else is remained same. 
+## We change the HuBERT model in fairseq/models directory to get predictions at multiple layers of [hubert.py](https://github.com/raotnameh/hubert_cluster/blob/af9a8d33ee57d7e9744ca74c8b7179b82229bc69/fairseq/models/hubert/hubert.py#L537). Everything else is remained same. 
 
 <p align="center">
   <img src="docs/fairseq_logo.png" width="150">
